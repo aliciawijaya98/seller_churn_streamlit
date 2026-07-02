@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
- 
+
 # ---------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------
@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="Seller Churn Predictor",
     layout="wide",
 )
- 
+
 # ---------------------------------------------------------------
 # Load model bundle
 # ---------------------------------------------------------------
@@ -21,7 +21,7 @@ def load_model_bundle(path="seller_churn_model.pkl"):
     with open(path, "rb") as f:
         bundle = pickle.load(f)
     return bundle
- 
+
 bundle = load_model_bundle()
 model = bundle["model"]
 FEATURES = bundle["features"]
@@ -37,7 +37,7 @@ STATE_LIST = [
     "SE", "SP", "TO",
 ]
 STATE_TO_CODE = {state: idx for idx, state in enumerate(STATE_LIST)}
- 
+
 FEATURE_LABELS = {
     "recency_days": "Recency (days since last order)",
     "tenure_days": "Tenure (days since first sale)",
@@ -54,9 +54,9 @@ FEATURE_LABELS = {
     "orders_per_month": "Orders per month",
     "seller_state_encoded": "Seller state",
 }
- 
+
 FEATURE_IMPORTANCE = dict(zip(FEATURES, model.feature_importances_)) if hasattr(model, "feature_importances_") else {}
- 
+
 def risk_tier(prob: float) -> tuple[str, str]:
     """Return (tier label, color) based on churn probability."""
     if prob >= 0.7:
@@ -65,7 +65,7 @@ def risk_tier(prob: float) -> tuple[str, str]:
         return "🟠 Medium Risk", "#f39c12"
     else:
         return "🟢 Low Risk", "#2ecc71"
- 
+
 def make_gauge(prob: float) -> go.Figure:
     tier_label, color = risk_tier(prob)
     fig = go.Figure(
@@ -92,13 +92,12 @@ def make_gauge(prob: float) -> go.Figure:
     )
     fig.update_layout(height=280, margin=dict(l=20, r=20, t=50, b=10))
     return fig
- 
- 
+
+
 def build_feature_row(inputs: dict) -> pd.DataFrame:
     row = {f: inputs[f] for f in FEATURES}
     return pd.DataFrame([row], columns=FEATURES)
- 
- 
+
 # ---------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------
@@ -120,17 +119,17 @@ st.caption(
     f"Decision threshold: **{OPTIMAL_THRESHOLD:.2f}** "
     "(optimized to maximize the F2-Score, prioritizing recall to reduce missed churners)."
 )
- 
+
 tab1, tab2 = st.tabs(["Single Seller Prediction", "Batch Prediction (CSV)"])
- 
+
 # ---------------------------------------------------------------
 # TAB 1 — Single prediction
 # ---------------------------------------------------------------
 with tab1:
     st.subheader("Enter seller information")
- 
+
     left, right = st.columns(2)
- 
+
     with left:
         recency_days = st.number_input(FEATURE_LABELS["recency_days"], min_value=0, value=90, step=1)
         tenure_days = st.number_input(FEATURE_LABELS["tenure_days"], min_value=0, value=365, step=1)
@@ -139,7 +138,7 @@ with tab1:
         monetary_avg_order = st.number_input(FEATURE_LABELS["monetary_avg_order"], min_value=0.0, value=100.0, step=10.0)
         avg_price = st.number_input(FEATURE_LABELS["avg_price"], min_value=0.0, value=80.0, step=5.0)
         orders_per_month = st.number_input(FEATURE_LABELS["orders_per_month"], min_value=0.0, value=2.0, step=0.1)
- 
+
     with right:
         avg_freight_value = st.number_input(FEATURE_LABELS["avg_freight_value"], min_value=0.0, value=20.0, step=1.0)
         n_distinct_products = st.number_input(FEATURE_LABELS["n_distinct_products"], min_value=0, value=15, step=1)
@@ -148,9 +147,9 @@ with tab1:
         late_delivery_rate = st.slider(FEATURE_LABELS["late_delivery_rate"], 0.0, 1.0, 0.05, 0.01)
         cancellation_rate = st.slider(FEATURE_LABELS["cancellation_rate"], 0.0, 1.0, 0.02, 0.01)
         seller_state = st.selectbox(FEATURE_LABELS["seller_state_encoded"], STATE_LIST, index=STATE_LIST.index("SP"))
- 
+
     predict_clicked = st.button("Predict churn risk", type="primary")
- 
+
     if predict_clicked:
         inputs = {
             "recency_days": recency_days,
@@ -168,12 +167,12 @@ with tab1:
             "orders_per_month": orders_per_month,
             "seller_state_encoded": STATE_TO_CODE[seller_state],
         }
- 
+
         X = build_feature_row(inputs)
         prob = model.predict_proba(X)[0, 1]
         pred = int(prob >= OPTIMAL_THRESHOLD)
         tier_label, _ = risk_tier(prob)
- 
+
         res_col1, res_col2 = st.columns([1, 1])
         with res_col1:
             st.plotly_chart(make_gauge(prob), use_container_width=True)
@@ -188,7 +187,7 @@ with tab1:
                 )
             else:
                 st.success("This seller is predicted to stay active.")
- 
+
         if FEATURE_IMPORTANCE:
             st.subheader("What drives this model's predictions")
             imp_df = (
@@ -244,24 +243,24 @@ with tab2:
     )
     
     uploaded = st.file_uploader("Upload CSV", type=["csv"])
- 
+
     if uploaded is not None:
         try:
             df = pd.read_csv(uploaded)
         except Exception as e:
             st.error(f"Could not read CSV: {e}")
             df = None
- 
+
         if df is not None:
             missing = [f for f in FEATURES if f != "seller_state_encoded" and f not in df.columns]
             if "seller_state" not in df.columns and "seller_state_encoded" not in df.columns:
                 missing.append("seller_state (or seller_state_encoded)")
- 
+
             if missing:
                 st.error(f"Missing required columns: {', '.join(missing)}")
             else:
                 df_scored = df.copy()
- 
+
                 if "seller_state_encoded" not in df_scored.columns:
                     unknown_states = set(df_scored["seller_state"].astype(str).str.upper()) - set(STATE_LIST)
                     if unknown_states:
@@ -269,29 +268,29 @@ with tab2:
                     df_scored["seller_state_encoded"] = (
                         df_scored["seller_state"].astype(str).str.upper().map(STATE_TO_CODE)
                     )
- 
+
                 valid_rows = df_scored[FEATURES].notna().all(axis=1)
                 if (~valid_rows).any():
                     st.warning(f"{(~valid_rows).sum()} row(s) have missing/unmapped values and will be skipped.")
- 
+
                 X_batch = df_scored.loc[valid_rows, FEATURES]
                 probs = model.predict_proba(X_batch)[:, 1]
                 preds = (probs >= OPTIMAL_THRESHOLD).astype(int)
- 
+
                 df_scored = df_scored.loc[valid_rows].copy()
                 df_scored["churn_probability"] = probs
                 df_scored["predicted_churn"] = preds
                 df_scored["risk_tier"] = df_scored["churn_probability"].apply(lambda p: risk_tier(p)[0])
- 
+
                 st.success(f"Scored {len(df_scored)} sellers.")
- 
+
                 c1, c2, c3 = st.columns(3)
                 c1.metric("High risk", int((df_scored["churn_probability"] >= 0.7).sum()))
                 c2.metric("Medium risk", int(((df_scored["churn_probability"] >= OPTIMAL_THRESHOLD) & (df_scored["churn_probability"] < 0.7)).sum()))
                 c3.metric("Low risk", int((df_scored["churn_probability"] < OPTIMAL_THRESHOLD).sum()))
- 
+
                 st.dataframe(df_scored, use_container_width=True)
- 
+
                 csv_buffer = io.StringIO()
                 df_scored.to_csv(csv_buffer, index=False)
                 st.download_button(
@@ -300,7 +299,7 @@ with tab2:
                     file_name="seller_churn_predictions.csv",
                     mime="text/csv",
                 )
- 
+
 st.divider()
 st.caption(
     "This tool provides predicted churn probabilities to support seller retention decisions. "
