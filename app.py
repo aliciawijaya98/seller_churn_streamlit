@@ -1,6 +1,5 @@
 import pickle
 import io
-import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
@@ -58,13 +57,14 @@ FEATURE_LABELS = {
 FEATURE_IMPORTANCE = dict(zip(FEATURES, model.feature_importances_)) if hasattr(model, "feature_importances_") else {}
 
 def risk_tier(prob: float) -> tuple[str, str]:
-    """Return (tier label, color) based on churn probability."""
-    if prob >= 0.7:
-        return "🔴 High Risk", "#e74c3c"
+    if prob >= 0.80:
+        return "🔴 Critical", "#c0392b"
+    elif prob >= 0.50:
+        return "🟠 High", "#e67e22"
     elif prob >= OPTIMAL_THRESHOLD:
-        return "🟠 Medium Risk", "#f39c12"
+        return "🟡 Medium", "#f1c40f"
     else:
-        return "🟢 Low Risk", "#2ecc71"
+        return "🟢 Low", "#2ecc71"
 
 def make_gauge(prob: float) -> go.Figure:
     tier_label, color = risk_tier(prob)
@@ -79,8 +79,9 @@ def make_gauge(prob: float) -> go.Figure:
                 "bar": {"color": color},
                 "steps": [
                     {"range": [0, OPTIMAL_THRESHOLD * 100], "color": "#eafaf1"},
-                    {"range": [OPTIMAL_THRESHOLD * 100, 70], "color": "#fef5e7"},
-                    {"range": [70, 100], "color": "#fdedec"},
+                    {"range": [OPTIMAL_THRESHOLD * 100, 50], "color": "#fcf3cf"},
+                    {"range": [50, 80], "color": "#fdebd0"},
+                    {"range": [80, 100], "color": "#fdedec"},
                 ],
                 "threshold": {
                     "line": {"color": "black", "width": 3},
@@ -236,7 +237,7 @@ with tab2:
     ])
 
     st.download_button(
-        label="📥 Download CSV Template",
+        label="Download CSV Template",
         data=template.to_csv(index=False),
         file_name="seller_churn_template.csv",
         mime="text/csv",
