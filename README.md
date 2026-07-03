@@ -2,7 +2,7 @@
 
 ### **Live Demo**
 
-**Streamlit App:** https://seller-churn-prediction.streamlit.app
+**Streamlit App:** https://sellerchurnapp.streamlit.app/
 
 ### **Overview**
 
