@@ -108,19 +108,6 @@ Predict the probability that a seller will churn within the next **90 days**
 using a Random Forest classification model trained on historical seller behavior.
 """)
 
-st.subheader("Model Performance")
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("F2-Score", f"{F2_SCORE:.3f}")
-c2.metric("Recall", f"{RECALL:.3f}")
-c3.metric("Precision", f"{PRECISION:.3f}")
-c4.metric("ROC-AUC", f"{ROC_AUC:.3f}")
-
-st.caption(
-    f"Decision threshold: **{OPTIMAL_THRESHOLD:.2f}** "
-    "(optimized to maximize the F2-Score, prioritizing recall to reduce missed churners)."
-)
-
 tab1, tab2 = st.tabs(["Single Seller Prediction", "Batch Prediction (CSV)"])
 
 # ---------------------------------------------------------------
@@ -190,7 +177,7 @@ with tab1:
                 st.success("This seller is predicted to stay active.")
 
         if FEATURE_IMPORTANCE:
-            st.subheader("What drives this model's predictions")
+            st.subheader("What drives this model's predictions (SHAP)")
             imp_df = (
                 pd.DataFrame(
                     {"feature": list(FEATURE_IMPORTANCE.keys()), "importance": list(FEATURE_IMPORTANCE.values())}
