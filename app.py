@@ -186,7 +186,7 @@ with tab1:
             )
             imp_df["label"] = imp_df["feature"].map(FEATURE_LABELS)
             fig = go.Figure(go.Bar(x=imp_df["importance"], y=imp_df["label"], orientation="h"))
-            fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), xaxis_title="Feature importance")
+            fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), xaxis_title="SHAP")
             st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------------
